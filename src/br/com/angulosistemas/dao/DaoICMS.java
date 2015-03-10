@@ -41,6 +41,7 @@ import br.com.angulo.sistemas.Utilitario;
 import br.com.angulo.sistemas.bean.ICMS;
 import br.com.angulo.sistemas.bean.Produto;
 import br.com.angulo.sistemas.gui.ProgressBarDemo;
+import br.com.angulo.sistemas.reflection.DaoReflection;
 
 public class DaoICMS {
 	private Connection conexao;
@@ -141,32 +142,10 @@ public class DaoICMS {
 			//BarraProgresso.progressBar.setMaximum(produtosAtualizados.size());
 			for (int j=0; j<itensAtualizados.size(); j++){	//percorrerá cada Produto da Lista de Produtos atualizados, carregando-los no PreparedStatement
 				ICMS i = itensAtualizados.get(j);
-
-				pstmt.setInt(1, i.getCodigo_produto());
-				pstmt.setInt(2, i.getEan());
-				pstmt.setString(3, i.getTipo_mva());
-				pstmt.setDouble(4, i.getMva());
-				pstmt.setString(5, i.getSac_cst());
-				pstmt.setDouble(6, i.getSac_alq());
-				pstmt.setDouble(7, i.getSac_alqst());
-				pstmt.setDouble(8, i.getSac_rbc());
-				pstmt.setDouble(9, i.getSac_rbcst());
-				pstmt.setString(10, i.getSas_cst());
-				pstmt.setDouble(11, i.getSas_alq());
-				pstmt.setDouble(12, i.getSas_alqst());
-				pstmt.setDouble(13, i.getSas_rbc());
-				pstmt.setDouble(14, i.getSas_rbcst());
-				pstmt.setString(15, i.getSvc_cst());
-				pstmt.setDouble(16, i.getSvc_alq());
-				pstmt.setDouble(17, i.getSvc_alqst());
-				pstmt.setDouble(18, i.getSvc_rbc());
-				pstmt.setDouble(19, i.getSvc_rbcst());
-				pstmt.setString(20, i.getSnc_cst());
-				pstmt.setDouble(21, i.getSnc_alq());
-				pstmt.setDouble(22, i.getSnc_alqst());
-				pstmt.setDouble(23, i.getSnc_rbc());
-				pstmt.setDouble(24, i.getSnc_rbcst());
-
+				
+				//Utilizando Classe Reflection
+				DaoReflection.carregarPreparedStatement(i, pstmt, ICMS.class);
+				
 				pstmt.addBatch();
 				
 				if ((j+1) % qtdeLinhas == 0){		//i+1 pois 'i' começa a partir do 0 mas deve contar a partir do 1
@@ -201,30 +180,7 @@ public class DaoICMS {
 		ICMS i = new ICMS();
 		try{
 			//Carregando 1 objeto tipo Produto para adiciona-lo a uma lista e depois compara-los à lista de Produto do banco angulo.txt
-			i.setCodigo_produto(result.getInt(1));
-			i.setEan(result.getInt(2));
-			i.setTipo_mva(result.getString(3));
-			i.setMva(result.getDouble(4));
-			i.setSac_cst(result.getString(5));
-			i.setSac_alq(result.getDouble(6));
-			i.setSac_alqst(result.getDouble(7));
-			i.setSac_rbc(result.getDouble(8));
-			i.setSac_rbcst(result.getDouble(9));
-			i.setSas_cst(result.getString(10));
-			i.setSas_alq(result.getDouble(11));
-			i.setSas_alqst(result.getDouble(12));
-			i.setSas_rbc(result.getDouble(13));
-			i.setSas_rbcst(result.getDouble(14));
-			i.setSvc_cst(result.getString(15));
-			i.setSvc_alq(result.getDouble(16));
-			i.setSvc_alqst(result.getDouble(17));
-			i.setSvc_rbc(result.getDouble(18));
-			i.setSvc_rbcst(result.getDouble(19));
-			i.setSnc_cst(result.getString(20));
-			i.setSnc_alq(result.getDouble(21));
-			i.setSnc_alqst(result.getDouble(22));
-			i.setSnc_rbc(result.getDouble(23));
-			i.setSnc_rbcst(result.getDouble(24));
+			DaoReflection.carregarDoResultSet(i, result, ICMS.class);
 
 		}catch(SQLException e){
 			e.printStackTrace();
@@ -353,33 +309,7 @@ public class DaoICMS {
 
 
 	public boolean verificaAlteracao(ICMS i1, ICMS i2){
-		if(i1.getCodigo_produto() == (i2.getCodigo_produto()))
-			if(i1.getEan() == (i2.getEan()))
-				if(i1.getTipo_mva() == i2.getTipo_mva())
-					if(i1.getMva() == i2.getMva())
-						if(i1.getSac_cst().equalsIgnoreCase(i2.getSac_cst()))
-							if(i1.getSac_alq() == (i2.getSac_alq()))
-								if(i1.getSac_alqst() == i2.getSac_alqst())
-									if(i1.getSac_rbc() == i2.getSac_rbc())
-										if(i1.getSac_rbcst() == i2.getSac_rbcst())
-											if(i1.getSas_cst() == i2.getSas_cst())
-												if(i1.getSas_alq() == i2.getSas_alq())
-													if(i1.getSas_alqst() == i2.getSas_alqst())
-														if(i1.getSas_rbc() == i2.getSas_rbc())
-															if(i1.getSas_rbcst() == i2.getSas_rbcst())
-																if(i1.getSvc_cst().equalsIgnoreCase(i2.getSvc_cst()))
-																	if(i1.getSvc_alq() == i2.getSvc_alq())
-																		if(i1.getSvc_alqst() == i2.getSvc_alqst())
-																			if(i1.getSvc_rbc() == i2.getSvc_rbc())
-																				if(i1.getSvc_rbcst() == i2.getSvc_rbcst())
-																					if(i1.getSnc_cst().equalsIgnoreCase(i2.getSnc_cst()))
-																						if(i1.getSnc_alq() == i2.getSnc_alq())
-																							if(i1.getSnc_alqst() == i2.getSnc_alqst())
-																								if(i1.getSnc_rbc() == i2.getSnc_rbc())
-																									if(i1.getSnc_rbcst() == i2.getSnc_rbcst())
-																										return false;	//objetos Produto são iguais
-
-		return true;	//caso alguma das comparações acima for falsa, então estes produtos SÃO diferentes
+		return DaoReflection.verificaAlteracao(i1, i2, ICMS.class);
 	}
 
 	public int getCountAtualizados(){
