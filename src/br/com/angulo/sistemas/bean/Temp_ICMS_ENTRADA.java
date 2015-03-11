@@ -2,7 +2,7 @@ package br.com.angulo.sistemas.bean;
 
 import java.sql.Date;
 
-import br.com.angulosistemas.dao.Coluna;
+import br.com.angulo.sistemas.reflection.Coluna;
 
 
 public class Temp_ICMS_ENTRADA {

@@ -1,6 +1,7 @@
 package br.com.angulo.sistemas.bean;
 
-import br.com.angulosistemas.dao.Coluna;
+import br.com.angulo.sistemas.reflection.Coluna;
+
 
 public class PIS_COFINS {
 	public static final String TABELA_PIS_COFINS = "MXF_VW_PIS_COFINS";

@@ -11,25 +11,26 @@ public final class Configuracao {
 
 	//Atributos do arquivo de configuração 'angulo.cfg'
 	private static final String ORIGEM = "[ORIGEM]";
-	private static final String DESTINO = "[DESTINO]";
+	//private static final String DESTINO = "[DESTINO]";
 	private static final String LOCAL_LOG_ERRO = "[LOCAL_LOG_ERRO]";
 	private static final String LOCAL_LOG_ATUALIZA = "[LOCAL_LOG_ATUALIZA]";
 	private static final String TABELA = "[TABELA]";
-	private static final String LOGIN = "[LOGIN]";
-	private static final String SENHA = "[SENHA]";
+	//private static final String LOGIN = "[LOGIN]";
+	//private static final String SENHA = "[SENHA]";
 	private static final String EXIBIR_DIALOGO = "[EXIBIR_DIALOGO]";
 	private static final String DELAY = "[DELAY]";
 	private static final String QTDE_LINHAS = "[QTDE_LINHAS]";
 
 	//Declarando atribulos a serem carregados
 	public static File origem; // endereço do arquivo do banco angulo.txt
-	public static File destino = new File("mysql.angulo.kinghost.net"); // endereço do banco MySql
+	public static File host = new File("mysql.angulo.kinghost.net"); // endereço do banco MySql
+	public static String banco = "angulo01";
 	public static File localLogErro;
 	public static File localLogAtualiza;
 	public static String tabela;
-	public static String login = "angulo";
+	public static String login = "angulo01";
 	public static String senha = "droop33";
-	public static Boolean exibirDialogo;
+	public static Boolean exibirDialogo = true;
 	public static long delay;
 	public static int qtdeLinhas;
 
@@ -100,7 +101,7 @@ public final class Configuracao {
 		}
 		//Mostrando valores lidos no arquivo de configuração
 		System.out.println("[ORIGEM]>> " + origem);
-		System.out.println("[DESTINO]>> " + destino);
+		System.out.println("[DESTINO]>> " + host);
 		System.out.println("[LOCAL_LOG_ERRO]>> " + localLogErro);
 		System.out.println("[LOCAL_LOG_ATUALIZA]>> " + localLogAtualiza);
 		System.out.println("[TABELA]>> " + tabela);

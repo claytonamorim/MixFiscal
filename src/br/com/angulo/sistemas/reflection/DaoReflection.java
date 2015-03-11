@@ -5,7 +5,8 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 
 import br.com.angulo.sistemas.Log;
-import br.com.angulo.sistemas.bean.Produto;
+import static br.com.angulo.sistemas.Utilitario.getDouble;
+import static br.com.angulo.sistemas.Utilitario.getInteger;
 
 public final class DaoReflection {
 	public static void carregarPreparedStatement(Object objeto, PreparedStatement pstmt, Class<?> classe){
@@ -39,40 +40,75 @@ public final class DaoReflection {
 		//Carrega o Object vazio com dados da ResultSet
 		try{
 			for(Method metodo: classe.getDeclaredMethods()){
-				Coluna anotacao = metodo.getAnnotation(Coluna.class);
+				if (metodo.isAnnotationPresent(Coluna.class)){
+					Coluna anotacao = metodo.getAnnotation(Coluna.class);
 			
-				if (metodo.getParameterTypes()[0] == Integer.class)
-					metodo.invoke(objeto, result.getInt(anotacao.posicao()));
-				if (metodo.getParameterTypes()[0] == String.class)
-					metodo.invoke(objeto,  result.getString(anotacao.posicao()));
-				if(metodo.getParameterTypes()[0] == Double.class)
-					metodo.invoke(objeto,  result.getDouble(anotacao.posicao()));
+					if (metodo.getParameterTypes()[0] == int.class)
+						metodo.invoke(objeto, result.getInt(anotacao.posicao()));
+					if (metodo.getParameterTypes()[0] == String.class)
+						metodo.invoke(objeto,  result.getString(anotacao.posicao()));
+					if(metodo.getParameterTypes()[0] == Double.class)
+						metodo.invoke(objeto,  result.getDouble(anotacao.posicao()));
+				}	
 			}
 		}catch(Exception e){
 			e.printStackTrace();
-			Log.criarLogErro(e);  //Gravando o log de erro em C:/importa/erros.log
+			Log.criarLogErro(e);
 		}
 	}
 	
+	public static String converterResultsetParaCSV(ResultSet result, Class<?> classe){
+		StringBuilder builder = new StringBuilder();
+		Coluna anotacao;
 	
-	public static boolean verificaAlteracao(Object b1, Object b2, Class<?> classe){
+		try{
+			result.beforeFirst();
+			while(result.next()){
+				for(Method metodo: classe.getDeclaredMethods()){
+					if(metodo.isAnnotationPresent(Coluna.class)){
+						anotacao = metodo.getAnnotation(Coluna.class);
+					
+						if(metodo.getReturnType() == int.class)
+							builder.append(result.getInt(anotacao.posicao()));
+						else if(metodo.getReturnType() == String.class)
+							builder.append(result.getString(anotacao.posicao()));
+						else if(metodo.getReturnType() == Double.class)
+							builder.append(result.getDouble(anotacao.posicao()));
+						
+						builder.append("|"); //adiciona um pipe para fechar o campo CSV
+					}
+				}// fim FOR
+				
+				builder.append(System.getProperty("line.separator"));	//pula para a proxima linha
+			
+			}//fim WHILE ResultSet
+		}catch(Exception e){
+			e.printStackTrace();
+			Log.criarLogErro(e);
+		}
+		
+		return builder.toString();
+	}
+	
+	
+	public static boolean verificaAlteracao(Object obj1, Object obj2, Class<?> classe){
 		try{
 			for(Method metodo: classe.getDeclaredMethods()){
 				if(metodo.getReturnType() == Void.class)
 					continue;
 				
 				if(metodo.getReturnType() == String.class)
-					if(metodo.invoke(b1).toString().equalsIgnoreCase(metodo.invoke(b2).toString()))
+					if(metodo.invoke(obj1).toString().equalsIgnoreCase(metodo.invoke(obj2).toString()))
 						continue;
 					else
 						return false;
-				if(metodo.getReturnType() == Integer.class)
-					if(Integer.parseInt((String)metodo.invoke(b1)) == Integer.parseInt((String)metodo.invoke(b2)))
+				if(metodo.getReturnType() == int.class)
+					if(Integer.parseInt((String)metodo.invoke(obj1)) == Integer.parseInt((String)metodo.invoke(obj2)))
 						continue;
 					else
 						return false;
 				if(metodo.getReturnType() == Double.class)
-					if(Double.parseDouble((String) metodo.invoke(b1)) == Double.parseDouble((String) metodo.invoke(b2)))
+					if(Double.parseDouble((String) metodo.invoke(obj1)) == Double.parseDouble((String) metodo.invoke(obj2)))
 						continue;
 					else
 						return false;
@@ -83,6 +119,32 @@ public final class DaoReflection {
 		}
 		
 		return true;	//caso todas as comparações sejam verdadeiras então trata-se do mesmo registro
+	}
+	
+	public static void getItensFromTxt(Object obj, String[] linhaSplited, Class<?> classe){
+		try{
+			for(Method metodo: classe.getDeclaredMethods()){
+				if (metodo.isAnnotationPresent(Coluna.class)){
+					Coluna anotacao = metodo.getAnnotation(Coluna.class);
+					
+					if(metodo.getParameterTypes()[0] == int.class){	//se for encontrado parametro, então trata-se de metodo Setter
+						metodo.invoke(obj, getInteger(linhaSplited[anotacao.posicao()]));
+						break;
+					}
+					if(metodo.getParameterTypes()[0] == String.class){	//se for encontrado parametro, então trata-se de metodo Setter
+						metodo.invoke(obj, linhaSplited[anotacao.posicao()]);
+						break;
+					}
+					if(metodo.getParameterTypes()[0] == Double.class){	//se for encontrado parametro, então trata-se de metodo Setter
+						metodo.invoke(obj, getDouble(linhaSplited[anotacao.posicao()]));
+						break;
+					}
+				}
+			}
+		}catch(Exception e){
+			e.printStackTrace();
+			Log.criarLogErro(e);
+		}
 	}
 	
 	

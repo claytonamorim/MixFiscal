@@ -15,11 +15,11 @@ public class ConnectionFactory {
 	//static String URL = "jdbc:mysql://mysql.angulo.kinghost.net/angulo";
 	//static String usuario = "root";
 	static String urlCompleta;
-	static String url = "jdbc:mysql://";
+	static String driver = "jdbc:mysql://";
 
-	public Connection getConnection(String restanteUrl){
+	public Connection getConnection(){
 		try {
-			urlCompleta = url + restanteUrl + "?rewriteBatchedStatements=true";
+			urlCompleta = driver + host + banco + "?rewriteBatchedStatements=true";
 			System.out.println("URL Completa: " + urlCompleta);
 			Class.forName("com.mysql.jdbc.Driver");
 			return DriverManager.getConnection(urlCompleta, login, senha);
@@ -37,6 +37,7 @@ public class ConnectionFactory {
 			System.out.println("Excecao de SQL: " + e);
 			e.printStackTrace();
 			Log.criarLogErro(e);  //Gravando o log de erro em C:/importa/erros.log
+			JOptionPane.showMessageDialog(null, "Não foi possível realizar conexão com o Banco de Dados Web");
 		}
 		return null;
 	}

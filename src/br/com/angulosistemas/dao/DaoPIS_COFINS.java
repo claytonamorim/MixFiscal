@@ -1,30 +1,12 @@
 package br.com.angulosistemas.dao;
 
 import static br.com.angulo.sistemas.Configuracao.delay;
-import static br.com.angulo.sistemas.Configuracao.destino;
-import static br.com.angulo.sistemas.Configuracao.login;
 import static br.com.angulo.sistemas.Configuracao.origem;
 import static br.com.angulo.sistemas.Configuracao.qtdeLinhas;
-import static br.com.angulo.sistemas.Configuracao.tabela;
 import static br.com.angulo.sistemas.Utilitario.delay;
-import static br.com.angulo.sistemas.Utilitario.getDouble;
-import static br.com.angulo.sistemas.Utilitario.getInteger;
-import static br.com.angulo.sistemas.bean.Produto.ProdutoE.COD_BARRAS;
-import static br.com.angulo.sistemas.bean.Produto.ProdutoE.DESCRICAO;
-import static br.com.angulo.sistemas.bean.Produto.ProdutoE.ESTAT1;
-import static br.com.angulo.sistemas.bean.Produto.ProdutoE.ESTAT2;
-import static br.com.angulo.sistemas.bean.Produto.ProdutoE.ESTAT3;
-import static br.com.angulo.sistemas.bean.Produto.ProdutoE.FORNECEDOR;
-import static br.com.angulo.sistemas.bean.Produto.ProdutoE.ID;
-import static br.com.angulo.sistemas.bean.Produto.ProdutoE.MARGEM;
-import static br.com.angulo.sistemas.bean.Produto.ProdutoE.PCUSTO;
-import static br.com.angulo.sistemas.bean.Produto.ProdutoE.PVENDA;
-import static br.com.angulo.sistemas.bean.Produto.ProdutoE.QTD_CPA;
-import static br.com.angulo.sistemas.bean.Produto.ProdutoE.SALDO;
 
 import java.io.File;
 import java.io.IOException;
-import java.lang.reflect.Method;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
@@ -35,56 +17,122 @@ import java.util.List;
 
 import javax.swing.JOptionPane;
 
-import br.com.angulo.sistemas.Banco;
 import br.com.angulo.sistemas.ConnectionFactory;
 import br.com.angulo.sistemas.Log;
 import br.com.angulo.sistemas.Utilitario;
-import br.com.angulo.sistemas.bean.ICMS;
 import br.com.angulo.sistemas.bean.PIS_COFINS;
-import br.com.angulo.sistemas.bean.Produto;
 import br.com.angulo.sistemas.gui.ProgressBarDemo;
+import br.com.angulo.sistemas.reflection.DaoReflection;
 
 public class DaoPIS_COFINS {
-	private static final String PRODUTO = "PRODUTO";
 	private Connection conexao;
 	private int countAtualizados;	
-	private Class<?> classe;
 	//private String nomeTabelaCliente;
 
 	public DaoPIS_COFINS(){
-		this.conexao = new ConnectionFactory().getConnection(destino + "/angulo");
+		this.conexao = new ConnectionFactory().getConnection();
 	}
+	
+	public List<PIS_COFINS> enviarItensAtualizados(){
+		ResultSet result =  null;										//Produtos do banco onLine
+		List<PIS_COFINS> itensTxt = new ArrayList<PIS_COFINS>();			//Produtos do banco angulo.txt
+		List<PIS_COFINS> itensAtualizados = new ArrayList<PIS_COFINS>();	//lista com apenas os produtos que foram alterados no banco angulo.txt em relação ao banco onLine
+
+		//		Carregando lista de Produtos do banco onLine em ResultSet
+
+		//String query = "Select * from " + tabela;
+		executarCreateTable();
+		String query = "Select * from " + PIS_COFINS.TABELA_PIS_COFINS;
+
+		try {
+			Statement stmt = conexao.createStatement();
+			result = stmt.executeQuery(query);
+		}catch (SQLException e) {
+			e.printStackTrace();
+			Log.criarLogErro(e);
+			JOptionPane.showMessageDialog(null, "Não foi possível se comunicar com o banco web. Verifique sua conexão com a Internet");
+		}
+
+		//		Pegando lista de Produtos do banco txt em List<Produto>
+		itensTxt = getItensFromTxt(origem);	//"origem" é o local do txt com o csv da tabela
+		System.out.println("Qtde de itens no banco angulo.txt:" + itensTxt.size());
+		try{
+			PIS_COFINS iTxt;
+			//____Pegando a quantidade de linhas na ResultSet
+			result.last();
+			int qtdeRes=result.getRow();
+			result.first();
+			System.out.println("Qtde da ResultSet:" + qtdeRes);
+			//________________________________________________ 
+
+			if(qtdeRes == 0){
+				System.out.println("Banco Web está vazio, realizando upload de TODOS os registros do banco angulo.txt...");
+				itensAtualizados = itensTxt;
+
+			}else{
+				loopPrincipal:									//nomeando o loop principal
+					for (int i=0; i<itensTxt.size(); i++){
+						iTxt = itensTxt.get(i);				//1 produto do banco angulo.txt para comparação
+						result.first();							//retorna ao primeiro item do resultSet a cada início de comparacao
+						for(int j=0; j<qtdeRes; j++)	{	//vai comparar este produto do banco angulo com "cada" produto do banco onLine(ResultSet)
+							if (iTxt.getCodigo_produto() == (result.getInt("codigo_produto"))){
+								boolean verifica = verificaAlteracao(iTxt ,getItemFromResultSet(result));
+								if(verifica){
+									itensAtualizados.add(iTxt);	//produto encontrado e possui alterações (UPDATE)
+								}
+								continue loopPrincipal;			//como o produto foi encontrado, então após realizadas as tarefas de comparação, o laço é pulado para o próximo item
+							}	
+							result.next();					//pulado para o próximo item para comparação
+						}//fim do FOR
+						itensAtualizados.add(iTxt);		//verifica se a ResultSet chegou ao último objeto produto, e, neste caso onde chegou-se ao final mas não encontrou-se o Produto, significa se tratar de um novo produto, INSERT)	
+					}	//fim de TODAS as comparaçoes
+			}
+
+			countAtualizados = itensAtualizados.size();
+			System.out.println("Qtde de produtos a serem atualizados:" + countAtualizados);
+			executarUpdateQuery(itensAtualizados);	//chamando método que envia de fato os produtos novos e alterados para o banco onLine
+			return itensAtualizados;		//Retornando lista de produtos novos e alterados (INSERT into table ON DUPLICATE KEY UPDATE), para posteriormente ser montada tabela a ser mostrada ao usuário
+
+		}catch(Exception e){
+			e.printStackTrace();
+			Log.criarLogErro(e);
+			return null;
+		}finally{
+			try {
+				result.close();  //fechando a ResultSet
+				conexao.close();
+			} catch (Exception e) {
+				e.printStackTrace();
+			}
+		}
+	}
+	
 
 	public String createTableQuery(){
-		System.out.println("nome da tabela concatenada=" + ICMS.TABELA_ICMS);
+		System.out.println("nome da tabela concatenada=" + PIS_COFINS.TABELA_PIS_COFINS);
 
 		StringBuilder builder = new StringBuilder();
-		builder.append("CREATE TABLE IF NOT EXISTS `" + ICMS.TABELA_ICMS + "` (");
+		builder.append("CREATE TABLE IF NOT EXISTS `" + PIS_COFINS.TABELA_PIS_COFINS + "` (");
 		builder.append("`codigo_produto` int(11) NOT NULL,");
-		builder.append("'ean' int(6) NOT NULL,");
-		builder.append("'tipo_mva' varchar(2) NULL,");
-		builder.append("'mva' decimal(7,3),");
-		builder.append("'sac_cst' varchar(3) NULL,");
-		builder.append("'sac_alq' decimal(7,3),");
-		builder.append("'sac_alqst' decimal(7,3),");
-		builder.append("'sac_rbc' decimal(7,3),");
-		builder.append("'sac_rbcst' decimal(7,3),");
-		builder.append("'sas_cst' varchar(3),");
-		builder.append("'sas_alq' decimal(7,3),");
-		builder.append("'sas_alqst' decimal(7,3),");
-		builder.append("'sas_rbc' decimal(7,3),");
-		builder.append("'sas_rbcst' decimal(7,3),");
-		builder.append("'svc_cst' varchar(3),");
-		builder.append("'svc_alq' decimal(7,3),");
-		builder.append("'svc_alqst' decimal(7,3),");
-		builder.append("'svc_rbc' decimal(7,3),");
-		builder.append("'svc_rbcst' decimal(7,3),");
-		builder.append("'snc_cst' varchar(3),");
-		builder.append("'snc_alq' decimal(7,3),");
-		builder.append("'snc_alqst' decimal(7,3),");
-		builder.append("'snc_rbc' decimal(7,3),");
-		builder.append("'snc_rbcst' decimal(7,3)");
-		
+		builder.append("'ean' int(16) NOT NULL,");
+		builder.append("'descritivo_produto' varchar(255),");
+		builder.append("'ncm' varchar(10),");
+		builder.append("'ncm_ex' varchar(3) NULL,");
+		builder.append("'cod_natureza_receita' int(4),");
+		builder.append("'credito_presumido' int(1),");
+		builder.append("'pis_cst_e' varchar(3),");
+		builder.append("'pis_cst_s' varchar(3),");
+		builder.append("'pis_alq_e' decimal(7,3),");
+		builder.append("'pis_alq_s' decimal(7,3),");
+		builder.append("'cofins_cst_e' varchar(3),");
+		builder.append("'cofins_cst_s' varchar(3),");
+		builder.append("'cofins_alq_e' decimal(7,3),");
+		builder.append("'cofins_alq_s' decimal(7,3),");
+		builder.append("'depto' varchar(50),");
+		builder.append("'secao' varchar(50),");
+		builder.append("'grupo' varchar(50),");
+		builder.append("'subgrupo' varchar(50),");
+		builder.append("'status' varchar(100)");
 		builder.append(") ENGINE=InnoDB DEFAULT CHARSET=latin1;");			
 
 		return builder.toString();		
@@ -101,80 +149,45 @@ public class DaoPIS_COFINS {
 		}
 	}
 
-	public void executarUpdateQuery(List<ICMS> itensAtualizados){
+	public void executarUpdateQuery(List<PIS_COFINS> itensAtualizados){
 		executarCreateTable();	//aqui é criada a tabela no banco web, caso já exista nada acontece
 
-		PreparedStatement pstmt;
-		String queryReplace = "REPLACE into " + ICMS.TABELA_ICMS + " (" +
-				//String queryReplace = "REPLACE into " + tabela + " (" +
+		PreparedStatement pstmt = null;
+		String queryReplace = "REPLACE into " + PIS_COFINS.TABELA_PIS_COFINS + " (" +
 				"codigo_produto," +
-				"ean," +
-				"tipo_mva," +
-				"mva," +
-				"sac_cst," +
-				"sac_alq," +
-				"sac_alqst," +
-				"sac_rbc," +
-				"sac_rbcst," +
-				"sas_cst," +
-				"sas_alq," +
-				"sas_alqst," +
-				"sas_rbc," +
-				"sas_rbcst," +
-				"svc_cst," +
-				"svc_alq," +
-				"svc_alqst," +
-				"svc_rbc," +
-				"svc_rbcst," +
-				"snc_cst," +
-				"snc_alq," +
-				"snc_alqst," +
-				"snc_rbc," +
-				"snc_rbcst)" +
-				"VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)";
+				"ean" +
+				"descritivo_produto," +
+				"ncm," +
+				"ncm_ex," +
+				"cod_natureza_receita," +
+				"credito_presumido," +
+				"pis_cst_e," +
+				"pis_cst_s," +
+				"pis_alq_e," +
+				"pis_alq_s," +
+				"cofins_cst_e," +
+				"cofins_cst_s," +
+				"cofins_alq_e," +
+				"cofins_alq_s," +
+				"depto," +
+				"secao," +
+				"grupo," +
+				"subgrupo," +
+				"status)" +
+				"VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)";
 
 		try {
 			long startTimeAtAll = System.currentTimeMillis();
 			long startTime = System.currentTimeMillis();
 			conexao.setAutoCommit(false);
 			pstmt = conexao.prepareStatement(queryReplace);
-			//new BarraProgresso();
 			new ProgressBarDemo();
-			//BarraProgresso.progressBar.setMinimum(0);
-			//BarraProgresso.progressBar.setMaximum(produtosAtualizados.size());
+			
 			for (int j=0; j<itensAtualizados.size(); j++){	//percorrerá cada Produto da Lista de Produtos atualizados, carregando-los no PreparedStatement
-				//ICMS i = itensAtualizados.get(j);
-
-				setarPreparedStatement(pstmt, itensAtualizados);
-				/*
-				pstmt.setInt(1, i.getCodigo_produto());
-				pstmt.setInt(2, i.getEan());
-				pstmt.setString(3, i.getTipo_mva());
-				pstmt.setDouble(4, i.getMva());
-				pstmt.setString(5, i.getSac_cst());
-				pstmt.setDouble(6, i.getSac_alq());
-				pstmt.setDouble(7, i.getSac_alqst());
-				pstmt.setDouble(8, i.getSac_rbc());
-				pstmt.setDouble(9, i.getSac_rbcst());
-				pstmt.setString(10, i.getSas_cst());
-				pstmt.setDouble(11, i.getSas_alq());
-				pstmt.setDouble(12, i.getSas_alqst());
-				pstmt.setDouble(13, i.getSas_rbc());
-				pstmt.setDouble(14, i.getSas_rbcst());
-				pstmt.setString(15, i.getSvc_cst());
-				pstmt.setDouble(16, i.getSvc_alq());
-				pstmt.setDouble(17, i.getSvc_alqst());
-				pstmt.setDouble(18, i.getSvc_rbc());
-				pstmt.setDouble(19, i.getSvc_rbcst());
-				pstmt.setString(20, i.getSnc_cst());
-				pstmt.setDouble(21, i.getSnc_alq());
-				pstmt.setDouble(22, i.getSnc_alqst());
-				pstmt.setDouble(23, i.getSnc_rbc());
-				pstmt.setDouble(24, i.getSnc_rbcst());
-				*/
-				
+				//++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+				DaoReflection.carregarPreparedStatement(itensAtualizados.get(j), pstmt, PIS_COFINS.class);
+				//+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 				pstmt.addBatch();
-				
 				if ((j+1) % qtdeLinhas == 0){		//i+1 pois 'i' começa a partir do 0 mas deve contar a partir do 1
 					int[] count = pstmt.executeBatch();
 					conexao.commit();
@@ -201,128 +214,44 @@ public class DaoPIS_COFINS {
 			Log.criarLogErro(e);
 		}
 	}
-	
-	public void setarPreparedStatement(PreparedStatement pstmt, List<?> lista){
-		try{
-			this.classe = lista.get(0).getClass();	//pegando o nome da classe
-			
-			for(int j=0; j<lista.size(); j++){
-				Object objeto = lista.get(j);
-				
-				for(Method metodo : classe.getDeclaredMethods()){
-					if(metodo.isAnnotationPresent(Coluna.class)){
-						Coluna anotacao = metodo.getAnnotation(Coluna.class);
-						Class<?> tipo = metodo.getReturnType();
-						if(tipo == Integer.class)
-							pstmt.setInt(anotacao.posicao(), (int) metodo.invoke(objeto)); //invocando o metodo
-						if(tipo == String.class)
-							pstmt.setString(anotacao.posicao(), (String) metodo.invoke(objeto));
-						if(tipo == Double.class)
-							pstmt.setDouble(anotacao.posicao(), (Double) metodo.invoke(objeto));
-					}
-				}
-			}
-			
-		}catch(Exception e){
-			
-		}
-		//return pstmt;	//retorna o PreparedStement
-	}
 
+	public PIS_COFINS getItemFromResultSet(ResultSet result){
+		PIS_COFINS i = new PIS_COFINS();
+		//++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+		DaoReflection.carregarDoResultSet(i, result, PIS_COFINS.class);
+		//++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 
-	public ICMS getItemFromResultSet(ResultSet result){
-		ICMS i = new ICMS();
-		try{
-			//Carregando 1 objeto tipo Produto para adiciona-lo a uma lista e depois compara-los à lista de Produto do banco angulo.txt
-			i.setCodigo_produto(result.getInt(1));
-			i.setEan(result.getInt(2));
-			i.setTipo_mva(result.getString(3));
-			i.setMva(result.getDouble(4));
-			i.setSac_cst(result.getString(5));
-			i.setSac_alq(result.getDouble(6));
-			i.setSac_alqst(result.getDouble(7));
-			i.setSac_rbc(result.getDouble(8));
-			i.setSac_rbcst(result.getDouble(9));
-			i.setSas_cst(result.getString(10));
-			i.setSas_alq(result.getDouble(11));
-			i.setSas_alqst(result.getDouble(12));
-			i.setSas_rbc(result.getDouble(13));
-			i.setSas_rbcst(result.getDouble(14));
-			i.setSvc_cst(result.getString(15));
-			i.setSvc_alq(result.getDouble(16));
-			i.setSvc_alqst(result.getDouble(17));
-			i.setSvc_rbc(result.getDouble(18));
-			i.setSvc_rbcst(result.getDouble(19));
-			i.setSnc_cst(result.getString(20));
-			i.setSnc_alq(result.getDouble(21));
-			i.setSnc_alqst(result.getDouble(22));
-			i.setSnc_rbc(result.getDouble(23));
-			i.setSnc_rbcst(result.getDouble(24));
-
-		}catch(SQLException e){
-			e.printStackTrace();
-			Log.criarLogErro(e);  //Gravando o log de erro em C:/importa/erros.log
-		}
 		return i;
 	}
 
-	public List<ICMS> getItensFromResultSet(ResultSet result){
+	public List<PIS_COFINS> getItensFromResultSet(ResultSet result){
 		try{
 			result.beforeFirst(); //aponta o cursor para uma linha antes da primeira, pois ao entrar no loop na primeira vez já é chamado o método next e o cursor irá para o primeiro registro
-			//result.first();	//aponta o cursor para a primeira linha para então itera-lo
-			List<ICMS> itens = new ArrayList<ICMS>();
-			ICMS i;
+			List<PIS_COFINS> itens = new ArrayList<PIS_COFINS>();
+			PIS_COFINS i;
 
 			while(result.next()){
-				i = new ICMS();
-				i.setCodigo_produto(result.getInt(0));
-				i.setEan(result.getInt(1));
-				i.setTipo_mva(result.getString(2));
-				i.setMva(result.getDouble(3));
-				i.setSac_cst(result.getString(4));
-				i.setSac_alq(result.getDouble(5));
-				i.setSac_alqst(result.getDouble(6));
-				i.setSac_rbc(result.getDouble(7));
-				i.setSac_rbcst(result.getDouble(8));
-				i.setSas_cst(result.getString(9));
-				i.setSas_alq(result.getDouble(10));
-				i.setSas_alqst(result.getDouble(11));
-				i.setSas_rbc(result.getDouble(12));
-				i.setSas_rbcst(result.getDouble(13));
-				i.setSvc_cst(result.getString(14));
-				i.setSvc_alq(result.getDouble(15));
-				i.setSvc_alqst(result.getDouble(16));
-				i.setSvc_rbc(result.getDouble(17));
-				i.setSvc_rbcst(result.getDouble(18));
-				i.setSnc_cst(result.getString(19));
-				i.setSnc_alq(result.getDouble(20));
-				i.setSnc_alqst(result.getDouble(21));
-				i.setSnc_rbc(result.getDouble(22));
-				i.setSnc_rbcst(result.getDouble(23));
-				
+				i = new PIS_COFINS();
+				//++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+				DaoReflection.carregarDoResultSet(i, result, PIS_COFINS.class);
+				//++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 				itens.add(i);
 			}
+			
 			return itens;
+			
 		}catch(SQLException e){
 			e.printStackTrace();
 			Log.criarLogErro(e);
 			return null;
-		}finally{
-			try {
-				result.close();		//fecha o ResultSet
-			} catch (SQLException e) {
-				e.printStackTrace();
-			}
 		}
 	}
 
 
-	public List<ICMS> getItensFromTxt(File fileName){
-		boolean achouTabela = false;
-
-		List<ICMS> itensTxt = new ArrayList<ICMS>();
+	public List<PIS_COFINS> getItensFromTxt(File fileName){
+		List<PIS_COFINS> itensTxt = new ArrayList<PIS_COFINS>();
 		String bancoTxt = "";
-		int qtdCampos = 13;
+		int qtdCampos = 20;
 		try{
 			bancoTxt = Utilitario.lerArquivoTxt(fileName.getAbsolutePath());	//retorna o banco 'angulo.txt' em 1 String
 		}catch(IOException e){
@@ -331,88 +260,30 @@ public class DaoPIS_COFINS {
 			e.printStackTrace();
 		}
 		String[] bancoTxtSeparado = Utilitario.splitTxt(bancoTxt);	//separa o banco 'angulo.txt' em linhas	
-		ICMS i;
+		PIS_COFINS i;
 
 		for (int j=0; j<bancoTxtSeparado.length; j++){
-			//String[] linhaSplited = Utilitario.splitTab(bancoTxtSeparado[i], (qtdCampos + 1));
 			String[] tabela = bancoTxtSeparado[j].split("\\t");//cria array de String com apenas um campo (o numero da tabela)
 
 			if(tabela.length<=0)	//se a linha não conter nenhum campo, então o laço é iterado e a próxima linha é verificada
 				continue;
 
-			if(getInteger(tabela[0]) == Banco.PRODUTO){
-				/*
-				String[] linhaBuscandoTabela = bancoTxtSeparado[i].split("\\t");
-				if(! achouTabela)
-					if(linhaBuscandoTabela.length == 2){
-						nomeTabelaCliente = "Produto_" + linhaBuscandoTabela[1];	//guardou
-						achouTabela = true;
-					}
-				*/
-
-				String[] linhaSplited = Utilitario.splitTab(bancoTxtSeparado[j], qtdCampos);	//cria array de Strings com 12 campos fixos(mesmo que em determinada linha do arquivo angulo.txt não contenha os 12 campos, isso evita Exception ArrayIndexOutOfBoundsException)
-				i = new ICMS();
-				i.setCodigo_produto(getInteger(linhaSplited[1]));
-				i.setEan(getInteger(linhaSplited[2]));
-				i.setTipo_mva(linhaSplited[3]);
-				i.setMva(getDouble(linhaSplited[4]));
-				i.setSac_cst(linhaSplited[5]);
-				i.setSac_alq(getDouble(linhaSplited[6]));
-				i.setSac_alqst(getDouble(linhaSplited[7]));
-				i.setSac_rbc(getDouble(linhaSplited[8]));
-				i.setSac_rbcst(getDouble(linhaSplited[9]));
-				i.setSas_cst(linhaSplited[10]);
-				i.setSas_alq(getDouble(linhaSplited[11]));
-				i.setSas_alqst(getDouble(linhaSplited[12]));
-				i.setSas_rbc(getDouble(linhaSplited[13]));
-				i.setSas_rbcst(getDouble(linhaSplited[14]));
-				i.setSvc_cst(linhaSplited[15]);
-				i.setSvc_alq(getDouble(linhaSplited[16]));
-				i.setSvc_alqst(getDouble(linhaSplited[17]));
-				i.setSvc_rbc(getDouble(linhaSplited[18]));
-				i.setSvc_rbcst(getDouble(linhaSplited[19]));
-				i.setSnc_cst(linhaSplited[20]);
-				i.setSnc_alq(getDouble(linhaSplited[21]));
-				i.setSnc_alqst(getDouble(linhaSplited[22]));
-				i.setSnc_rbc(getDouble(linhaSplited[23]));
-				i.setSnc_rbcst(getDouble(linhaSplited[24]));
-
-				itensTxt.add(i);	//adiciona Produto à lista de Produtos
-			}
-
+			String[] linhaSplited = Utilitario.splitTab(bancoTxtSeparado[j], qtdCampos);	//cria array de Strings com 12 campos fixos(mesmo que em determinada linha do arquivo angulo.txt não contenha os 12 campos, isso evita Exception ArrayIndexOutOfBoundsException)
+			i = new PIS_COFINS();
+			//++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+			DaoReflection.getItensFromTxt(i, linhaSplited, PIS_COFINS.class);
+			//++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+			itensTxt.add(i);	//adiciona Produto à lista de Produtos
+			
 		}//fim do for principal
 		return itensTxt;	//retorna a lista completa de Produtos do banco angulo.txt
 	}
 
 
-	public boolean verificaAlteracao(ICMS i1, ICMS i2){
-		if(i1.getCodigo_produto() == (i2.getCodigo_produto()))
-			if(i1.getEan() == (i2.getEan()))
-				if(i1.getTipo_mva() == i2.getTipo_mva())
-					if(i1.getMva() == i2.getMva())
-						if(i1.getSac_cst().equalsIgnoreCase(i2.getSac_cst()))
-							if(i1.getSac_alq() == (i2.getSac_alq()))
-								if(i1.getSac_alqst() == i2.getSac_alqst())
-									if(i1.getSac_rbc() == i2.getSac_rbc())
-										if(i1.getSac_rbcst() == i2.getSac_rbcst())
-											if(i1.getSas_cst() == i2.getSas_cst())
-												if(i1.getSas_alq() == i2.getSas_alq())
-													if(i1.getSas_alqst() == i2.getSas_alqst())
-														if(i1.getSas_rbc() == i2.getSas_rbc())
-															if(i1.getSas_rbcst() == i2.getSas_rbcst())
-																if(i1.getSvc_cst().equalsIgnoreCase(i2.getSvc_cst()))
-																	if(i1.getSvc_alq() == i2.getSvc_alq())
-																		if(i1.getSvc_alqst() == i2.getSvc_alqst())
-																			if(i1.getSvc_rbc() == i2.getSvc_rbc())
-																				if(i1.getSvc_rbcst() == i2.getSvc_rbcst())
-																					if(i1.getSnc_cst().equalsIgnoreCase(i2.getSnc_cst()))
-																						if(i1.getSnc_alq() == i2.getSnc_alq())
-																							if(i1.getSnc_alqst() == i2.getSnc_alqst())
-																								if(i1.getSnc_rbc() == i2.getSnc_rbc())
-																									if(i1.getSnc_rbcst() == i2.getSnc_rbcst())
-																										return false;	//objetos Produto são iguais
-
-		return true;	//caso alguma das comparações acima for falsa, então estes produtos SÃO diferentes
+	public boolean verificaAlteracao(PIS_COFINS i1, PIS_COFINS i2){
+		//+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+		return DaoReflection.verificaAlteracao(i1, i2, PIS_COFINS.class);	
+		//+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 	}
 
 	public int getCountAtualizados(){

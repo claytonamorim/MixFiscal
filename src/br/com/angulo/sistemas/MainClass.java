@@ -32,7 +32,6 @@ public class MainClass {
 			Configuracao.setConfiguracao();
 		}else{
 			System.out.println("Não foi passado argumentos na chamada, utilizando endereço padrão do angulo.cfg");
-			//System.out.println("valor de tabela=" + tabela);
 			Configuracao.setConfiguracao();
 		}
 		
@@ -78,30 +77,6 @@ public class MainClass {
 	
 }
 
-	/*
-	public String listarProdutosAtualizados(List<Produto> produtos){
-		try{
-			if(!produtos.isEmpty()){
-				StringBuilder builder = null;
-				System.out.println("Concatenando objetos atualizados para serem mostrados");
-				builder = new StringBuilder();
-				for (Produto produto : produtos){
-					builder.append(System.getProperty("line.separator"));
-					builder.append(produto.getLinha());
-				}//fim do for
-				return builder.toString();
-			}//fim do if
-			else{
-				return null;
-			}//fim do else
-		}catch(NullPointerException e){
-			System.out.println("Excecao de Fonte nula em TelaProcessaBanco.atualizaTextArea(): " + e);
-			Log.criarLogErro(e);  //Gravando o log de erro em C:/importa/erros.log
-			//areaStatus.setText(areaStatus.getText() + "\n" + "NÃO HÁ ATUALIZAÇÕES!");
-		}
-		return null;
-	}
-	*/
 
 	
 	
