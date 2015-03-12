@@ -84,13 +84,13 @@ public abstract class Utilitario {
 	////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 	//método para separar os campos das linhas, que são distribuídos em um Array tipo String
 	public static String[] splitTab(String linha){
-		String linhaSplited[] = linha.split("|");
+		String linhaSplited[] = linha.split("\\t");
 		return linhaSplited;
 	}
 
 	public static String[] splitTab(String linha, int qtd){
 		String[] linhaSplitedCompleta = new String[qtd];
-		String[] linhaSplited = linha.split("|",qtd);
+		String[] linhaSplited = linha.split("\\t",qtd);
 		for(int i = 0; i<linhaSplitedCompleta.length; i++){
 			if(i<linhaSplited.length ){
 				linhaSplitedCompleta[i] = linhaSplited[i];	

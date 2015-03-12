@@ -36,7 +36,16 @@ public final class DaoReflection {
 	}
 	
 	
-	public static void carregarDoResultSet(Object objeto, ResultSet result, Class<?> classe){
+	public static Object carregarDoResultSet(ResultSet result, Class<?> classe){
+		Object objeto = null;
+		try {
+			objeto = classe.newInstance();	//instanciando a classe;
+		} catch (InstantiationException e1) {
+			e1.printStackTrace();
+		} catch (IllegalAccessException e1) {
+			e1.printStackTrace();
+		}
+		
 		//Carrega o Object vazio com dados da ResultSet
 		try{
 			for(Method metodo: classe.getDeclaredMethods()){
@@ -55,6 +64,8 @@ public final class DaoReflection {
 			e.printStackTrace();
 			Log.criarLogErro(e);
 		}
+		
+		return objeto;
 	}
 	
 	public static String converterResultsetParaCSV(ResultSet result, Class<?> classe){
@@ -122,25 +133,37 @@ public final class DaoReflection {
 	}
 	
 	public static void getItensFromTxt(Object obj, String[] linhaSplited, Class<?> classe){
+		System.out.println("DaoReflection==>getItensFromTxt() - classe obj=" + obj.getClass() + " classe class=" + classe.getName());
+		
+		for(String s: linhaSplited)
+			System.out.println(s);
+		
 		try{
 			for(Method metodo: classe.getDeclaredMethods()){
 				if (metodo.isAnnotationPresent(Coluna.class)){
-					Coluna anotacao = metodo.getAnnotation(Coluna.class);
+					if(metodo.getReturnType() == void.class){
+						Coluna anotacao = metodo.getAnnotation(Coluna.class);
+						System.out.println("Nome Medodo=" + metodo.getName());
 					
-					if(metodo.getParameterTypes()[0] == int.class){	//se for encontrado parametro, então trata-se de metodo Setter
-						metodo.invoke(obj, getInteger(linhaSplited[anotacao.posicao()]));
-						break;
-					}
-					if(metodo.getParameterTypes()[0] == String.class){	//se for encontrado parametro, então trata-se de metodo Setter
-						metodo.invoke(obj, linhaSplited[anotacao.posicao()]);
-						break;
-					}
-					if(metodo.getParameterTypes()[0] == Double.class){	//se for encontrado parametro, então trata-se de metodo Setter
-						metodo.invoke(obj, getDouble(linhaSplited[anotacao.posicao()]));
-						break;
+						if(metodo.getParameterTypes()[0] == int.class){	//se for encontrado parametro, então trata-se de metodo Setter
+							System.out.println("Inteiro");
+							metodo.invoke(obj, getInteger(linhaSplited[anotacao.posicao() + 1]));
+							continue;
+						}
+						if(metodo.getParameterTypes()[0] == String.class){	//se for encontrado parametro, então trata-se de metodo Setter
+							System.out.println("String");
+							metodo.invoke(obj, linhaSplited[anotacao.posicao() + 1]);
+							continue;
+						}
+						if(metodo.getParameterTypes()[0] == Double.class){	//se for encontrado parametro, então trata-se de metodo Setter
+							System.out.println("Double");
+							metodo.invoke(obj, getDouble(linhaSplited[anotacao.posicao() + 1]));
+							continue;
+						}
 					}
 				}
 			}
+			
 		}catch(Exception e){
 			e.printStackTrace();
 			Log.criarLogErro(e);

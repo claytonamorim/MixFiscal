@@ -12,17 +12,16 @@ import javax.swing.JScrollPane;
 import javax.swing.JTextPane;
 
 import br.com.angulo.sistemas.Configuracao;
-import br.com.angulo.sistemas.bean.Caixa;
 import br.com.angulo.sistemas.bean.Produto;
-import br.com.angulo.sistemas.bean.Venda;
-import br.com.angulosistemas.dao.ProdutoTabela;
+import br.com.angulosistemas.dao.BeanExportaImporta;
+import br.com.angulosistemas.dao.DaoExportaImporta;
 import static br.com.angulo.sistemas.Configuracao.*;
 
 public class MainClass {
 
-	private List<Produto> prodAtualizados;
-	private List<Caixa> caixaAtualizados;
-	private List<Venda> vendaAtualizados;
+	private List<BeanExportaImporta> objAtualizados;
+	//private List<Caixa> caixaAtualizados;
+	//private List<Venda> vendaAtualizados;
 
 	public static void main(String[] args) {
 		System.out.println("Main da TelaProcessaBanco");
@@ -46,21 +45,34 @@ public class MainClass {
 	}
 
 	public void processar (){
-		prodAtualizados = new ArrayList<Produto>();
+		objAtualizados = new ArrayList<BeanExportaImporta>();
+		
 		System.out.println("Criando objeto DAO...");
-		ProdutoTabela daoProduto = new ProdutoTabela();
-		System.out.println("nome completo da tabela=" + daoProduto.getNomeTabelaProduto());
+		//________________________________________________________
+		//ProdutoTabela daoProduto = new ProdutoTabela();
+		Produto produto = new Produto();
+		DaoExportaImporta dao = new DaoExportaImporta(produto);
 		
-		prodAtualizados = daoProduto.getProdutosAtualizados();		//método que envia 'apenas' os registros alterados ou novos (mais eficiente!)
+		//__________________________________________________________
 		
-		Log.criarLogUpdate(prodAtualizados.size(), UtilitarioHtml.montarTabelaProdutos(prodAtualizados));
+		System.out.println("nome completo da tabela=" + produto.getTableName());
+		
+		//___________________________________________________________
+		//prodAtualizados = daoProduto.getProdutosAtualizados();		//método que envia 'apenas' os registros alterados ou novos (mais eficiente!)
+		//objAtualizados = dao.getItensAtualizados();
+		objAtualizados = dao.getItensFromTxt(new File("C:\\importa\\angulo.txt"));
+		dao.executarUpdateQuery(objAtualizados);
+		//_________________________________________________________
+		//Log.criarLogUpdate(prodAtualizados.size(), UtilitarioHtml.montarTabelaProdutos(prodAtualizados));
 		
 		//Verificando a opção [Exibir_Dialogo] e agindo de acordo com seu valor definido
 		if (exibirDialogo == true){
 			//montando as atualizações e mostrando-as ao usuário
 			JTextPane painel = new JTextPane();
 			painel.setContentType("text/html");
-			painel.setText(UtilitarioHtml.montarTodasTabelas(prodAtualizados, null, null));
+			//__________________________________________________________________________________
+			//painel.setText(UtilitarioHtml.montarTodasTabelas(prodAtualizados, null, null));
+			//__________________________________________________________________________________
 			//painel.setText(UtilitarioHtml.montarTabelaProdutos(prodAtualizados));
 			painel.setEditable(false);
 			painel.setBackground(null);

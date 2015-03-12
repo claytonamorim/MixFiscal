@@ -3,9 +3,10 @@ package br.com.angulo.sistemas.bean;
 import java.sql.Date;
 
 import br.com.angulo.sistemas.reflection.Coluna;
+import br.com.angulosistemas.dao.BeanExportaImporta;
 
 
-public class Temp_ICMS_ENTRADA {
+public class Temp_ICMS_ENTRADA implements BeanExportaImporta {
 	public static final String TABELA_TEMP_ICMS_ENTRADA = "MXF_TMP_ICMS_ENTRADA";
 	
 	private int codigo_produto;
@@ -340,6 +341,69 @@ public class Temp_ICMS_ENTRADA {
 	@Coluna(nome="fundamento_legal", posicao=28)
 	public void setFundamento_legal(String fundamento_legal) {
 		this.fundamento_legal = fundamento_legal;
+	}
+	
+	
+	// +++++++++++++ Métodos da Interface BeanExportacao ++++++++++++++
+	@Override
+	public String getTableName() {
+		return TABELA_TEMP_ICMS_ENTRADA;
+	}
+
+	@Override
+	public int getQtdeCampos() {
+		return 29;
+	}
+
+	@Override
+	public int getCodigoProduto() {
+		return this.codigo_produto;
+	}
+
+	@Override
+	public String createReplaceQuery() {
+		return null;
+	}
+	
+	@Override
+	public String createTableQuery(){
+		System.out.println("nome da tabela concatenada=" + Temp_ICMS_ENTRADA.TABELA_TEMP_ICMS_ENTRADA);
+
+		StringBuilder builder = new StringBuilder();
+		builder.append("CREATE TABLE IF NOT EXISTS `" + Temp_ICMS_ENTRADA.TABELA_TEMP_ICMS_ENTRADA + "` (");
+		builder.append("`codigo_produto` int(11) NOT NULL,");
+		builder.append("'ean' int(16) NOT NULL,");
+		builder.append("'tipo_mva' varchar(2) NULL,");
+		builder.append("'mva' decimal(7,3),");
+		builder.append("'mva_data_ini' date,");
+		builder.append("'mva_data_fim' date,");
+		builder.append("'credito_outorgado' int(1),");
+		builder.append("'gera_debito' int(1),");
+		builder.append("'sub_rbc_alq' int(1),");
+		builder.append("'ei_cst' varchar(3),");
+		builder.append("'ei_alq' decimal(7,3),");
+		builder.append("'ei_alqst' decimal(7,3),");
+		builder.append("'ei_rbc' decimal(7,3),");
+		builder.append("'ei_rbcst' decimal(7,3),");
+		builder.append("'ed_cst' varchar(3),");
+		builder.append("'ed_alq' decimal(7,3),");
+		builder.append("'ed_alqst' decimal(7,3),");
+		builder.append("'ed_rbc' decimal(7,3),");
+		builder.append("'ed_rbcst' decimal(7,3),");
+		builder.append("'es_cst' varchar(3),");
+		builder.append("'es_alq' decimal(7,3),");
+		builder.append("'es_alqst' decimal(7,3),");
+		builder.append("'es_rbc' decimal(7,3),");
+		builder.append("'es_rbcst' decimal(7,3),");
+		builder.append("'nfi_cst' varchar(3),");
+		builder.append("'nfd_cst' varchar(3),");
+		builder.append("'nfs_csosn' varchar(4),");
+		builder.append("'nf_alq' decimal(7,3),");
+		builder.append("'fundamento_legal' varchar(500)");
+		
+		builder.append(") ENGINE=InnoDB DEFAULT CHARSET=latin1;");			
+
+		return builder.toString();		
 	}
 	
 	

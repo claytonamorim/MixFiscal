@@ -2,9 +2,9 @@ package br.com.angulo.sistemas;
 
 import java.util.List;
 
-import br.com.angulo.sistemas.bean.Caixa;
+//import br.com.angulo.sistemas.bean.Caixa;
 import br.com.angulo.sistemas.bean.Produto;
-import br.com.angulo.sistemas.bean.Venda;
+//import br.com.angulo.sistemas.bean.Venda;
 
 public class UtilitarioHtml {
 	public static String montarTabelaProdutos(List<Produto> produtos){
@@ -49,6 +49,7 @@ public class UtilitarioHtml {
 		return builder.toString();
 	}
 	
+	/*
 	public static String montarTabelaCaixa(List<Caixa> caixas){
 		return null;
 	}
@@ -65,6 +66,6 @@ public class UtilitarioHtml {
 		
 		return builder.toString();
 	}
-	
+	*/
 	
 }

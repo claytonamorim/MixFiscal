@@ -1,9 +1,10 @@
 package br.com.angulo.sistemas.bean;
 
 import br.com.angulo.sistemas.reflection.Coluna;
+import br.com.angulosistemas.dao.BeanExportaImporta;
 
 
-public class ICMS {
+public class ICMS implements BeanExportaImporta{
 	public static final String TABELA_ICMS = "MXF_VW_ICMS";
 	
 	private int codigo_produto;
@@ -291,9 +292,89 @@ public class ICMS {
 	public void setSnc_rbcst(double snc_rbcst) {
 		this.snc_rbcst = snc_rbcst;
 	}
+
 	
+	// +++++++++++++ Métodos da Interface BeanExportacao ++++++++++++++
+	@Override
+	public String getTableName() {
+		return TABELA_ICMS;
+	}
+
+	@Override
+	public int getQtdeCampos() {
+		return 24;	//Essa tabela contém 24 campos.
+	}
+
+	@Override
+	public int getCodigoProduto() {
+		return this.codigo_produto;
+	}
 	
+	public String createTableQuery(){
+		System.out.println("nome da tabela concatenada=" + ICMS.TABELA_ICMS);
+
+		StringBuilder builder = new StringBuilder();
+		builder.append("CREATE TABLE IF NOT EXISTS `" + ICMS.TABELA_ICMS + "` (");
+		builder.append("`codigo_produto` int(11) NOT NULL,");
+		builder.append("'ean' int(16) NOT NULL,");
+		builder.append("'tipo_mva' varchar(2) NULL,");
+		builder.append("'mva' decimal(7,3),");
+		builder.append("'sac_cst' varchar(3) NULL,");
+		builder.append("'sac_alq' decimal(7,3),");
+		builder.append("'sac_alqst' decimal(7,3),");
+		builder.append("'sac_rbc' decimal(7,3),");
+		builder.append("'sac_rbcst' decimal(7,3),");
+		builder.append("'sas_cst' varchar(3),");
+		builder.append("'sas_alq' decimal(7,3),");
+		builder.append("'sas_alqst' decimal(7,3),");
+		builder.append("'sas_rbc' decimal(7,3),");
+		builder.append("'sas_rbcst' decimal(7,3),");
+		builder.append("'svc_cst' varchar(3),");
+		builder.append("'svc_alq' decimal(7,3),");
+		builder.append("'svc_alqst' decimal(7,3),");
+		builder.append("'svc_rbc' decimal(7,3),");
+		builder.append("'svc_rbcst' decimal(7,3),");
+		builder.append("'snc_cst' varchar(3),");
+		builder.append("'snc_alq' decimal(7,3),");
+		builder.append("'snc_alqst' decimal(7,3),");
+		builder.append("'snc_rbc' decimal(7,3),");
+		builder.append("'snc_rbcst' decimal(7,3)");
+		
+		builder.append(") ENGINE=InnoDB DEFAULT CHARSET=latin1;");			
+
+		return builder.toString();		
+	}
 	
+	public String createReplaceQuery(){
+		String queryReplace = "REPLACE into " + ICMS.TABELA_ICMS + " (" +
+				"codigo_produto," +
+				"ean," +
+				"tipo_mva," +
+				"mva," +
+				"sac_cst," +
+				"sac_alq," +
+				"sac_alqst," +
+				"sac_rbc," +
+				"sac_rbcst," +
+				"sas_cst," +
+				"sas_alq," +
+				"sas_alqst," +
+				"sas_rbc," +
+				"sas_rbcst," +
+				"svc_cst," +
+				"svc_alq," +
+				"svc_alqst," +
+				"svc_rbc," +
+				"svc_rbcst," +
+				"snc_cst," +
+				"snc_alq," +
+				"snc_alqst," +
+				"snc_rbc," +
+				"snc_rbcst)" +
+				"VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)";
+		
+		return queryReplace;
+	}
 	
 	
 	

@@ -24,11 +24,11 @@ public final class Configuracao {
 	//Declarando atribulos a serem carregados
 	public static File origem; // endereço do arquivo do banco angulo.txt
 	public static File host = new File("mysql.angulo.kinghost.net"); // endereço do banco MySql
-	public static String banco = "angulo01";
+	public static String banco = "angulo";	//angulo01
 	public static File localLogErro;
 	public static File localLogAtualiza;
 	public static String tabela;
-	public static String login = "angulo01";
+	public static String login = "angulo";	//angulo01
 	public static String senha = "droop33";
 	public static Boolean exibirDialogo = true;
 	public static long delay;

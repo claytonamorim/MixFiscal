@@ -1,8 +1,9 @@
 package br.com.angulo.sistemas.bean;
 
 import br.com.angulo.sistemas.reflection.Coluna;
+import br.com.angulosistemas.dao.BeanExportaImporta;
 
-public class Temp_ICMS_SAIDA {
+public class Temp_ICMS_SAIDA implements BeanExportaImporta{
 	public static final String TABELA_TEMP_ICMS_SAIDA = "MXF_TMP_ICMS_SAIDA";
 	
 	private int codigo_produto;
@@ -270,6 +271,63 @@ public class Temp_ICMS_SAIDA {
 	public void setFundamento_legal(String fundamento_legal) {
 		this.fundamento_legal = fundamento_legal;
 	};
+	
+	
+	// +++++++++++++ Métodos da Interface BeanExportacao ++++++++++++++
+	@Override
+	public String getTableName() {
+		return TABELA_TEMP_ICMS_SAIDA;
+	}
+
+	@Override
+	public int getQtdeCampos() {
+		return 23;
+	}
+
+	@Override
+	public int getCodigoProduto() {
+		return codigo_produto;
+	}
+
+	@Override
+	public String createReplaceQuery() {
+		return null;
+	}
+	
+	@Override
+	public String createTableQuery(){
+		System.out.println("nome da tabela concatenada=" + Temp_ICMS_SAIDA.TABELA_TEMP_ICMS_SAIDA);
+
+		StringBuilder builder = new StringBuilder();
+		builder.append("CREATE TABLE IF NOT EXISTS `" + Temp_ICMS_SAIDA.TABELA_TEMP_ICMS_SAIDA + "` (");
+		builder.append("`codigo_produto` int(11) NOT NULL,");
+		builder.append("'ean' int(16) NOT NULL,");
+		builder.append("'sac_cst' varchar(3) NULL,");
+		builder.append("'sac_alq' decimal(7,3),");
+		builder.append("'sac_alqst' decimal(7,3),");
+		builder.append("'sac_rbc' decimal(7,3),");
+		builder.append("'sac_rbcst' decimal(7,3),");
+		builder.append("'sas_cst' varchar(3),");
+		builder.append("'sas_alq' decimal (7,3),");
+		builder.append("'sas_alqst' decimal(7,3),");
+		builder.append("'sas_rbc' decimal(7,3),");
+		builder.append("'sas_rbcst' decimal(7,3),");
+		builder.append("'svc_cst' varchar(3),");
+		builder.append("'svc_alq' decimal(3),");
+		builder.append("'svc_alqst' decimal(7,3),");
+		builder.append("'svc_rbc' decimal(7,3),");
+		builder.append("'svc_rbcst' decimal(7,3),");
+		builder.append("'snc_cst' varchar(3),");
+		builder.append("'snc_alq' decimal(7,3),");
+		builder.append("'snc_alqst' decimal(7,3),");
+		builder.append("'snc_rbc' decimal(7,3),");
+		builder.append("'snc_rbcst' decimal(7,3),");
+		builder.append("'fundamento_legal' varchar(500)");
+		
+		builder.append(") ENGINE=InnoDB DEFAULT CHARSET=latin1;");			
+
+		return builder.toString();		
+	}
 	
 	
 }

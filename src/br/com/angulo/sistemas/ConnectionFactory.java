@@ -19,7 +19,7 @@ public class ConnectionFactory {
 
 	public Connection getConnection(){
 		try {
-			urlCompleta = driver + host + banco + "?rewriteBatchedStatements=true";
+			urlCompleta = driver + host + "/" + banco + "?rewriteBatchedStatements=true";
 			System.out.println("URL Completa: " + urlCompleta);
 			Class.forName("com.mysql.jdbc.Driver");
 			return DriverManager.getConnection(urlCompleta, login, senha);

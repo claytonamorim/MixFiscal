@@ -1,9 +1,10 @@
 package br.com.angulo.sistemas.bean;
 
 import br.com.angulo.sistemas.reflection.Coluna;
+import br.com.angulosistemas.dao.BeanExportaImporta;
 
 
-public class PIS_COFINS {
+public class PIS_COFINS implements BeanExportaImporta{
 	public static final String TABELA_PIS_COFINS = "MXF_VW_PIS_COFINS";
 	
 	private int codigo_produto;
@@ -238,6 +239,82 @@ public class PIS_COFINS {
 	public void setStatus(String status) {
 		this.status = status;
 	}
+
 	
+	
+	// +++++++++++++ Métodos da Interface BeanExportacao ++++++++++++++
+	@Override
+	public String getTableName() {
+		return TABELA_PIS_COFINS;
+	}
+
+	@Override
+	public int getQtdeCampos() {
+		return 20;	//Essa tabela contém 24 campos.
+	}
+
+	@Override
+	public int getCodigoProduto() {
+		return this.codigo_produto;
+	}
+	
+	@Override
+	public String createTableQuery(){
+		System.out.println("nome da tabela concatenada=" + PIS_COFINS.TABELA_PIS_COFINS);
+
+		StringBuilder builder = new StringBuilder();
+		builder.append("CREATE TABLE IF NOT EXISTS `" + PIS_COFINS.TABELA_PIS_COFINS + "` (");
+		builder.append("`codigo_produto` int(11) NOT NULL,");
+		builder.append("'ean' int(16) NOT NULL,");
+		builder.append("'descritivo_produto' varchar(255),");
+		builder.append("'ncm' varchar(10),");
+		builder.append("'ncm_ex' varchar(3) NULL,");
+		builder.append("'cod_natureza_receita' int(4),");
+		builder.append("'credito_presumido' int(1),");
+		builder.append("'pis_cst_e' varchar(3),");
+		builder.append("'pis_cst_s' varchar(3),");
+		builder.append("'pis_alq_e' decimal(7,3),");
+		builder.append("'pis_alq_s' decimal(7,3),");
+		builder.append("'cofins_cst_e' varchar(3),");
+		builder.append("'cofins_cst_s' varchar(3),");
+		builder.append("'cofins_alq_e' decimal(7,3),");
+		builder.append("'cofins_alq_s' decimal(7,3),");
+		builder.append("'depto' varchar(50),");
+		builder.append("'secao' varchar(50),");
+		builder.append("'grupo' varchar(50),");
+		builder.append("'subgrupo' varchar(50),");
+		builder.append("'status' varchar(100)");
+		builder.append(") ENGINE=InnoDB DEFAULT CHARSET=latin1;");			
+
+		return builder.toString();		
+	}
+	
+	@Override
+	public String createReplaceQuery(){
+		String queryReplace = "REPLACE into " + PIS_COFINS.TABELA_PIS_COFINS + " (" +
+				"codigo_produto," +
+				"ean" +
+				"descritivo_produto," +
+				"ncm," +
+				"ncm_ex," +
+				"cod_natureza_receita," +
+				"credito_presumido," +
+				"pis_cst_e," +
+				"pis_cst_s," +
+				"pis_alq_e," +
+				"pis_alq_s," +
+				"cofins_cst_e," +
+				"cofins_cst_s," +
+				"cofins_alq_e," +
+				"cofins_alq_s," +
+				"depto," +
+				"secao," +
+				"grupo," +
+				"subgrupo," +
+				"status)" +
+				"VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)";
+
+		return queryReplace;
+	}
 	
 }

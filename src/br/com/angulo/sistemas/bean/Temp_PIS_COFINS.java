@@ -1,8 +1,9 @@
 package br.com.angulo.sistemas.bean;
 
 import br.com.angulo.sistemas.reflection.Coluna;
+import br.com.angulosistemas.dao.BeanExportaImporta;
 
-public class Temp_PIS_COFINS {
+public class Temp_PIS_COFINS implements BeanExportaImporta{
 	public static final String TABELA_TEMP_PIS_COFINS = "MXF_TMP_PIS_COFINS";
 
 	private int codigo_produto;
@@ -182,5 +183,52 @@ public class Temp_PIS_COFINS {
 	};
 
 	
+
+	@Override
+	public String getTableName() {
+		return TABELA_TEMP_PIS_COFINS;
+	}
+
+	@Override
+	public int getQtdeCampos() {
+		return 15;
+	}
+
+	@Override
+	public int getCodigoProduto() {
+		return this.codigo_produto;
+	}
+
+	@Override
+	public String createReplaceQuery() {
+		return null;
+	}
+
+	@Override
+	public String createTableQuery(){
+		System.out.println("nome da tabela concatenada=" + Temp_PIS_COFINS.TABELA_TEMP_PIS_COFINS);
+
+		StringBuilder builder = new StringBuilder();
+		builder.append("CREATE TABLE IF NOT EXISTS `" + Temp_PIS_COFINS.TABELA_TEMP_PIS_COFINS + "` (");
+		builder.append("`codigo_produto` int(11) NOT NULL,");
+		builder.append("'ean' int(16) NOT NULL,");
+		builder.append("'ncm' varchar(10) NULL,");
+		builder.append("'ncm_ex' varchar(3) NULL,");
+		builder.append("'cod_natureza_receita' int(4) NULL,");
+		builder.append("'credito_presumido' int(1),");
+		builder.append("'pis_cst_e' varchar(3),");
+		builder.append("'pis_cst_s' varchar(3),");
+		builder.append("'pis_alq_e' decimal(7,3),");
+		builder.append("'pis_alq_s' decimal(7,3),");
+		builder.append("'ofins_cst_e' varchar(3),");
+		builder.append("'cofins_cst_s' varchar(3),");
+		builder.append("'cofins_alq_e' decimal(7,3),");
+		builder.append("'cofins_alq_s' decimal(7,3),");
+		builder.append("'fundamento_legal' varchar(500)");
+		
+		builder.append(") ENGINE=InnoDB DEFAULT CHARSET=latin1;");			
+
+		return builder.toString();		
+	}
 	
 }
